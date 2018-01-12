@@ -3,8 +3,18 @@ FC = mpifort
 LDFLAGS = -lnetcdff
 f2pyflags = --f90exec=${HOME}/opt/bin/mpifort
 
-test: test.f90
+sources = $(wildcard child_*.f90)
+execs = $(basename $(sources))
+all: $(execs) python
+
+child_%: child_%.f90 common.o
 	$(FC) -o $@ $^ $(LDFLAGS)
 
-python: ptest.f90
-	f2py -c -m ptest $^ $(f2pyflags)
+%.o: %.f90
+	$(FC) -c $< -o $@
+
+python: fortaleza.f90
+	f2py -c -m fortaleza_mod $^ $(f2pyflags)
+
+clean:
+	rm *.o *.so $(filter-out netcdf.mod, $(wildcard *.mod)) $(execs)
