@@ -1,0 +1,31 @@
+* libraries and binaries installed in ~/installs
+** Open-MPI-3
+*** if compiling with fresh compilers in ~/opt, also add ~/opt/lib64 to LD_LIBRARY_PATH (contains libquadmath, libgfortran)
+** HDF5
+*** export BASE=/sata1_ceazalabs/arno/HPC/uvHome/installs
+*** export CPPFLAGS=-I$BASE/include
+*** export LDFLAGS=-L$BASE/lib
+*** export CC=mpicc   <- important
+*** export FC=mpifort <- important
+*** ./configure --prefix=$BASE --enable-parallel
+** parallel-netcdf
+*** ./configure --prefix=$BASE --enable-shared
+** netcdf4
+*** with LDFLAGS, CPPFLAGS, CC
+*** --disable-dap is important (curl etc)
+*** ./configure --prefix=$BASE --enable-pnetcdf --disable-dap
+** netcdf-fortran
+*** NOTE: compiling fortran program with conda version fails because a different compiler has been used to compile it for conda
+*** with LDFLAGS, CPPFLAGS, CF
+*** ./configure --prefix=$BASE
+** proxychains + libs
+** CDO
+*** needs -std=c++11 capabilities in c++ compiler
+*** compiler needs to be same as for the linked libraries (used the same env variables as above)
+*** from libs4cdo:
+**** grib_api
+***** ./configure --prefix=$BASE CFLAGS=-fPIC
+***** CFLAGS=-fPIC here and in jasper important
+**** proj4
+**** jasper
+***** CFLAGS=-fPIC (important!)
