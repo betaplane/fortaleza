@@ -21,7 +21,6 @@ module fortaleza_common
    contains
      procedure :: init => init_pfile
      procedure :: dealloc => deallocate_pfile
-     procedure :: send_shape => send_shape
      procedure :: get_var => get_var
   end type parallel_file
 
@@ -86,31 +85,27 @@ contains
 
   subroutine get_var(this, x)
     class(parallel_file) :: this
-    type(ncvar) :: var
     integer :: ierr
     integer, dimension(:), allocatable :: count, start
     real, allocatable, intent(out) :: x(:, :, :, :)
     if (.not. associated(this%var) ) stop 2
-    allocate( count(this%var%n_dims), start(var%n_dims) )
-    count = this%var%shape
-    count(1) = count(1) / this%np
-    count(4) = 100
-    start = 1
-    start(1) = this%rank * count(1) + 1
-    allocate( x(count(1), count(2), count(3), count(4)), stat=ierr )
-    call check( nf90_get_var(this%ncid, this%var%id, x, start = start, count = count) )
-    deallocate( count, start )
-  end subroutine get_var
 
-  subroutine send_shape(this)
-    class(parallel_file) :: this
-    integer :: ierr
     if (this%rank == 0) then
        call MPI_Send(this%var%n_dims, 1, MPI_INT, 0, 10, this%parent, ierr)
        call MPI_Send(this%var%count_wo_ultd, 1, MPI_INT, 0, 11, this%parent, ierr)
        call MPI_Send(this%var%shape, this%var%n_dims, MPI_INT, 0, 12, this%parent, ierr)
     endif
-  end subroutine send_shape
+
+    allocate( count, source=this%var%shape, stat=ierr )
+    allocate( start(this%var%n_dims), source=1, stat=ierr )
+    count(1) = count(1) / this%np
+    start(1) = this%rank * count(1) + 1
+    if ( allocated(x) ) deallocate( x )
+    allocate( x(count(1), count(2), count(3), count(4)), stat=ierr )
+    call check( nf90_get_var(this%ncid, this%var%id, x, start = start, count = count) )
+    print *, this%rank, "got ", trim(this%var%name)
+    deallocate( count, start )
+  end subroutine get_var
 
   subroutine deallocate_pfile(this)
     class(parallel_file) :: this
@@ -125,7 +120,6 @@ contains
     elseif (associated(this%var)) then
        call this%var%dealloc()
        deallocate(this%var)
-       print *, "deallocated var", this%rank
     endif
     call check( nf90_close(this%ncid) )
     call MPI_finalize(ierr)

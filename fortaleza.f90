@@ -40,6 +40,7 @@ contains
     if (command == 1) then
        call MPI_Recv(ndims, 1, MPI_INT, 0, 10, children_comm, MPI_STATUS_IGNORE, ierr)
        call MPI_Recv(tot_count, 1, MPI_INT, 0, 11, children_comm, MPI_STATUS_IGNORE, ierr)
+       if (allocated(shape)) deallocate( shape )
        allocate( shape(ndims) )
        call MPI_Recv(shape, ndims, MPI_INT, 0, 12, children_comm, MPI_STATUS_IGNORE, ierr)
        print *, "received shape ", shape, tot_count
