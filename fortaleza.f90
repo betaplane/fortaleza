@@ -2,20 +2,24 @@
 
 module mod
   use mpi
+  use netcdf
   implicit none
+
   logical :: initialized = .false.
   integer :: info(4)
-  integer, allocatable :: shape(:)
+  integer, allocatable :: var_shape(:)
   real, allocatable :: x(:)
+  double precision, allocatable :: dims(:)
+  integer, allocatable, dimension(:) :: var_n_dims, var_xtypes
 
 contains
 
   subroutine spawn(n, file_name, var_name)
     character(len = *), intent(in) :: file_name
     character(len = *), intent(in), optional :: var_name
-    integer, intent(in) :: n
-    integer :: i, ierr, children_comm, cerr(n), requests(n)
-    integer :: ndims, command, tot_count, m
+    integer, intent(in) :: n ! number of processors
+    integer :: i, j, ierr, children_comm, cerr(n), requests(n)
+    integer :: ndims, command, tot_count, m, length
 
     if (.not. initialized) then
        call MPI_INIT(ierr)
@@ -35,16 +39,33 @@ contains
     endif
 
     ! get file info
-    call MPI_Recv(info, 4, MPI_INT, 0, 1, children_comm, MPI_STATUS_IGNORE, ierr)
+    call MPI_Recv(info, 4, MPI_INT, 0, 0, children_comm, MPI_STATUS_IGNORE, ierr)
+    if (allocated(var_n_dims)) deallocate(var_n_dims)
+    if (allocated(var_xtypes)) deallocate(var_xtypes)
+    allocate( var_n_dims(info(2)), var_xtypes(info(2)) )
+    do i=1, info(2)
+       call MPI_Recv(var_n_dims(i), 1, MPI_INT, 0, i, children_comm, MPI_STATUS_IGNORE, ierr)
+       call MPI_Recv(var_xtypes(i), 1, MPI_INT, 0, i + info(2), children_comm, MPI_STATUS_IGNORE, ierr)
+    enddo
 
     if (command == 1) then
-       call MPI_Recv(ndims, 1, MPI_INT, 0, 10, children_comm, MPI_STATUS_IGNORE, ierr)
-       call MPI_Recv(tot_count, 1, MPI_INT, 0, 11, children_comm, MPI_STATUS_IGNORE, ierr)
-       if (allocated(shape)) deallocate( shape )
-       allocate( shape(ndims) )
-       call MPI_Recv(shape, ndims, MPI_INT, 0, 12, children_comm, MPI_STATUS_IGNORE, ierr)
-       print *, "received shape ", shape, tot_count
+       call MPI_Recv(ndims, 1, MPI_INT, 0, 100, children_comm, MPI_STATUS_IGNORE, ierr)
+       call MPI_Recv(tot_count, 1, MPI_INT, 0, 101, children_comm, MPI_STATUS_IGNORE, ierr)
+       if (allocated(var_shape)) deallocate( var_shape )
+       allocate( var_shape(ndims) )
+       call MPI_Recv(var_shape, ndims, MPI_INT, 0, 102, children_comm, MPI_STATUS_IGNORE, ierr)
+       print *, "received shape ", var_shape, tot_count
 
+       if (allocated(dims)) deallocate(dims)
+       allocate( dims(sum(var_shape)) )
+       j = 1
+       do i=1, ndims
+          call MPI_Recv(dims(j: j+var_shape(i)), var_shape(i), MPI_DOUBLE, 0, 102+i, &
+               children_comm, MPI_STATUS_IGNORE, ierr)
+          j = j + var_shape(i)
+       enddo
+
+       if (allocated(x)) deallocate(x)
        allocate( x(tot_count), stat=ierr)
        if (ierr /= 0) stop 3
 
@@ -52,8 +73,7 @@ contains
 
        do i=1, n
           call MPI_IRecv(x((i-1) * m + 1: i * m), m, MPI_REAL, &
-               i-1, 20, children_comm, requests(i), ierr)
-          print *, "received from ", i, ierr
+               i-1, 200, children_comm, requests(i), ierr)
        enddo
 
        call MPI_Waitall(n, requests, MPI_STATUSES_IGNORE, ierr)
