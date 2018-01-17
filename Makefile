@@ -17,4 +17,4 @@ python : fortaleza.f90
 	f2py -c -m fortaleza_mod $^ $(f2pyflags)
 
 clean :
-	rm *.so $(filter-out netcdf.mod, $(wildcard *.mod)) $(execs)
+	rm *.so *.o $(filter-out netcdf.mod, $(wildcard *.mod)) $(execs)

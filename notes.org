@@ -18,6 +18,8 @@
 *** NOTE: compiling fortran program with conda version fails because a different compiler has been used to compile it for conda
 *** with LDFLAGS, CPPFLAGS, CF
 *** ./configure --prefix=$BASE
+** netCDF4-python
+*** if installed from source and nc-config and mpicc are in the path, as well as mpi4py, if will have parallel capabilities
 ** proxychains + libs
 ** CDO
 *** needs -std=c++11 capabilities in c++ compiler
@@ -29,3 +31,18 @@
 **** proj4
 **** jasper
 ***** CFLAGS=-fPIC (important!)
+** parallel python steps
+*** ipython profile create --parallel --profile=mpi
+*** needed: ipyparallel (mpi4py optional)
+*** alternative for non-jupyter interfaces is to start separate python processes with mpirun
+** optimized stuff
+*** mkl -> installed in ~/intel
+*** contains, I believe, BLAS, LAPACK and scaLAPACK routines
+*** numpy with mkl
+**** https://www.elliottforney.com/blog/npspmkl/
+**** edit site.cfg in numpy source directory under the [mkl] heading
+**** CFLAGS='-fopenmp -O3 -march=sandybridge -ftree-vectorize'
+**** LDFLAGS='-L$BASE/lib -lm -pthread -lgomp'
+**** add ~/intel/mkl/lib/intel64 to LD_LIBRARY_PATH
+*** scipy use exact same env variables plus -shared
+**** export LDFLAGS="${LDFLAGS} -shared"

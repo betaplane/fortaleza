@@ -21,6 +21,7 @@ contains
     integer :: i, j, ierr, children_comm, cerr(n), requests(n)
     integer :: ndims, command, tot_count, m, length
 
+    call MPI_initialized(initialized, ierr)
     if (.not. initialized) then
        call MPI_INIT(ierr)
        initialized = .true.

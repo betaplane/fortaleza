@@ -16,6 +16,3 @@ class fort(object):
         cs = np.r_[0, np.cumsum(s)]
         self.dims = [self.mod.dims[cs[i]: cs[i+1]] for i in range(4)]
         self.x = self.mod.x.reshape((nproc, s[1], -1)).transpose((0, 2, 1)).reshape((s[0], -1))
-
-if __name__ == "__main__":
-    f = fort('/sata1_glacio/glacio/Reanalysis/ERA-u-v-250-SH.nc', 'u', nproc=4)
